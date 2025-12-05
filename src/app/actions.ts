@@ -1,27 +1,24 @@
 "use server";
 
+import mongoose from "mongoose";
 import { connectDB } from "@/libs/mongodb";
 import { Product } from "@/models/Products";
 import { EnrichedProducts } from "@/types/types";
 
-export const getAllProducts = async (_id: string) => {
+export const getAllProducts = async () => {
   try {
     await connectDB();
-    if (!mongoose.Types.ObjectId.isValid(_id)) {
-      return null;
-    }
     const products: EnrichedProducts[] = await Product.find();
     return products;
   } catch (error) {
     console.error("Error getting products:", error);
-    throw new Error("Failed to fetch category products");
+    throw new Error("Failed to fetch products");
   }
 };
 
 export const getCategoryProducts = async (category: string) => {
   try {
     await connectDB();
-
     const products: EnrichedProducts[] = await Product.find({ category });
     return products;
   } catch (error) {
@@ -32,23 +29,21 @@ export const getCategoryProducts = async (category: string) => {
 
 export const getRandomProducts = async (productId: string) => {
   const shuffleArray = (array: EnrichedProducts[]) => {
-    let shuffled = array.slice();
-    for (let i = shuffled.length - 1; i > 0; i--) {
+    const clone = [...array];
+    for (let i = clone.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      [clone[i], clone[j]] = [clone[j], clone[i]];
     }
-    return shuffled;
+    return clone;
   };
 
   try {
     await connectDB();
-
     const allProducts: EnrichedProducts[] = await Product.find();
-    const shuffledProducts = shuffleArray(allProducts);
-    const randomProducts = shuffledProducts
-      .filter((product) => product._id.toString() !== productId)
+    const shuffled = shuffleArray(allProducts);
+    return shuffled
+      .filter((p) => p._id.toString() !== productId)
       .slice(0, 6);
-    return randomProducts;
   } catch (error) {
     console.error("Error getting products:", error);
     throw new Error("Failed to fetch random products");
@@ -59,9 +54,14 @@ export const getProduct = async (_id: string) => {
   try {
     await connectDB();
 
-    const product = await Product.findOne({ _id });
+    if (!mongoose.Types.ObjectId.isValid(_id)) {
+      return null; // এটাই হ্যাকার / স্ক্যানার সমস্যা বন্ধ করে
+    }
+
+    const product = await Product.findById(_id);
     return product;
   } catch (error) {
     console.error("Error getting product:", error);
+    return null;
   }
 };
