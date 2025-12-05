@@ -1,69 +1,39 @@
-import { connectDB } from "@/libs/mongodb";
-import User from "@/models/User";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
+import { connectDB } from "@/libs/mongodb";
+import User from "@/models/User";
 
 export async function POST(request: Request) {
   try {
+    const body = await request.json();
+    const { name, email, password } = body;
+
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+    }
+
     await connectDB();
 
-    const { name, email, password, phone } = await request.json();
-
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { message: "All fields are required" },
-        { status: 400 }
-      );
+    const normalizedEmail = String(email).toLowerCase();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return NextResponse.json({ error: "User already exists" }, { status: 409 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { message: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
-    }
-
-    const userFound = await User.findOne({ email });
-
-    if (userFound) {
-      return NextResponse.json(
-        { message: "Email already exists" },
-        { status: 409 },
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashed = await bcrypt.hash(password, 10);
 
     const user = new User({
-      name,
-      email,
-      phone,
-      password: hashedPassword,
+      name: name || null,
+      email: normalizedEmail,
+      password: hashed,
+      createdAt: new Date(),
     });
 
-    const savedUser = await user.save();
+    await user.save();
 
-    console.log("NEW USER CREATED:", savedUser.email);
-
-    return NextResponse.json(
-      {
-        name: savedUser.name,
-        email: savedUser.email,
-        createdAt: savedUser.createdAt,
-        updatedAt: savedUser.updatedAt,
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    console.error("Error during signup:", error);
-    if (error instanceof mongoose.Error.ValidationError) {
-      return NextResponse.json({ message: error.message }, { status: 400 });
-    } else {
-      return NextResponse.json(
-        { message: "Internal server error" },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({ ok: true, id: user._id.toString() });
+  } catch (err) {
+    console.error("Signup error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
