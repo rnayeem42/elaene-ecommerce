@@ -12,17 +12,22 @@ export const authOptions = {
         email: {},
         password: {},
       },
-
       async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password are required");
+        }
+
         await connectDB();
 
-        const user = await User.findOne({ email: credentials?.email }).select("+password");
+        const user = await User.findOne({ email: credentials.email }).select(
+          "+password",
+        );
 
         if (!user) {
           throw new Error("User does not exist");
         }
 
-        const isValid = await compare(credentials!.password, user.password);
+        const isValid = await compare(credentials.password, user.password);
 
         if (!isValid) {
           throw new Error("Invalid password");
@@ -48,8 +53,8 @@ export const authOptions = {
       if (user) token.id = user.id;
       return token;
     },
-
     async session({ session, token }) {
+      // @ts-ignore
       session.user.id = token.id;
       return session;
     },
