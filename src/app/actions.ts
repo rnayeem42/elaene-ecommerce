@@ -7,7 +7,9 @@ import { EnrichedProducts } from "@/types/types";
 export const getAllProducts = async () => {
   try {
     await connectDB();
-
+    if (!mongoose.Types.ObjectId.isValid(_id)) {
+      return null;
+    }
     const products: EnrichedProducts[] = await Product.find();
     return products;
   } catch (error) {

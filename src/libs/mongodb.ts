@@ -1,17 +1,22 @@
 import mongoose from "mongoose";
 
-export const connectDB = async () => {
-  if (mongoose.connection.readyState === 1) {
-    return;
+let cached = (global as any).mongoose || { conn: null, promise: null };
+
+export async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is missing");
+    }
+
+    cached.promise = mongoose
+      .connect(process.env.MONGODB_URI)
+      .then((mongoose) => mongoose);
   }
 
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    throw new Error("MONGODB_URI is not set");
-  }
-
-  await mongoose.connect(uri);
-};
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
 
 export default connectDB;
