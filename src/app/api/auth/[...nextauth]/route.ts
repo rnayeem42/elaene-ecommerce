@@ -1,59 +1,61 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
 import { connectDB } from "@/libs/mongodb";
-import User from "@/models/User";
+import User from "@/models/user";
+import { compare } from "bcryptjs";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        email: {},
+        password: {},
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password are required");
+        await connectDB();
+
+        const user = await User.findOne({ email: credentials?.email }).select("+password");
+
+        if (!user) {
+          throw new Error("User does not exist");
         }
 
-        await connectDB();
-        const email = String(credentials.email).toLowerCase();
+        const isValid = await compare(credentials!.password, user.password);
 
-        // Because password field has select:false in schema, we need .select("+password")
-        const user = await User.findOne({ email }).select("+password");
-        if (!user) throw new Error("User does not exist");
+        if (!isValid) {
+          throw new Error("Invalid password");
+        }
 
-        if (!user.password) throw new Error("Account created with OAuth. Use Google sign in.");
-
-        const isValid = await compare(credentials.password, user.password);
-        if (!isValid) throw new Error("Password is incorrect");
-
-        return { id: user._id.toString(), name: user.name, email: user.email };
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+        };
       },
     }),
   ],
 
-  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
-  pages: { signIn: "/login" },
+
+  pages: {
+    signIn: "/login",
+  },
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = (user as any).id ?? token.sub;
+      if (user) token.id = user.id;
       return token;
     },
+
     async session({ session, token }) {
-      if (session.user) (session.user as any).id = token.id;
+      session.user.id = token.id;
       return session;
     },
   },
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
