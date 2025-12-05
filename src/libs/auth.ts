@@ -1,77 +1,56 @@
-import { connectDB } from "@/libs/mongodb";
-import User from "@/models/User";
-import type { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import bcrypt from "bcryptjs";
+import User from "@/models/user";
+import dbConnect from "@/libs/mongodb";
+import { compare } from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    }),
     CredentialsProvider({
       name: "Credentials",
-      id: "credentials",
-      credentials: {
-        email: { label: "Email", type: "text", placeholder: "jsmith" },
-        password: { label: "Password", type: "password" },
-      },
+      credentials: {},
+
       async authorize(credentials) {
-        await connectDB();
-        const userFound = await User.findOne({
-          email: credentials?.email,
-        }).select("+password");
+        await dbConnect();
 
-        if (!userFound) throw new Error("Invalid Email");
+        const user = await User.findOne({ email: credentials?.email }).select("+password");
 
-        const passwordMatch = await bcrypt.compare(
-          credentials!.password,
-          userFound.password,
-        );
+        if (!user) {
+          throw new Error("User does not exist");
+        }
 
-        if (!passwordMatch) throw new Error("Invalid Password");
-        return userFound;
+        const isValid = await compare(credentials.password, user.password);
+
+        if (!isValid) {
+          throw new Error("Password is incorrect");
+        }
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+        };
       },
     }),
   ],
+
+  secret: process.env.NEXTAUTH_SECRET,
+
   pages: {
     signIn: "/login",
   },
-  session: {
-    strategy: "jwt",
-  },
+
   callbacks: {
-    async jwt({ token, user, session, trigger }) {
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
-      }
+    async session({ session, token }) {
+      session.user.id = token.id;
+      return session;
+    },
 
-      if (trigger === "update" && session?.email) {
-        token.email = session.email;
-      }
-
-      if (user) {
-        const u = user as unknown as any;
-        return {
-          ...token,
-          id: u.id,
-          phone: u.phone,
-        };
-      }
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
       return token;
     },
-    async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          _id: token.id,
-          name: token.name,
-          phone: token.phone,
-        },
-      };
-    },
   },
-};
+});
+
+export { handler as GET, handler as POST };
