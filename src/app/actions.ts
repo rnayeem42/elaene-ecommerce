@@ -4,7 +4,7 @@ import { connectDB } from "@/libs/mongodb";
 import { Product } from "@/models/Products";
 import { EnrichedProducts } from "@/types/types";
 
-export const getAllProducts = async () => {
+export const getAllProducts = async (_id: string) => {
   try {
     await connectDB();
     if (!mongoose.Types.ObjectId.isValid(_id)) {
