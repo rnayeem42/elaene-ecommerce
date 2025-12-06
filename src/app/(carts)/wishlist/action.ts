@@ -6,7 +6,7 @@ import { Session } from "next-auth";
 import mongoose, { Schema } from "mongoose";
 import { kv } from "@vercel/kv";
 import { revalidatePath } from "next/cache";
-import { Product } from "@/models/Products";
+import { Product } from "@/models/products";
 import { connectDB } from "@/libs/mongodb";
 
 export type Wishlists = {

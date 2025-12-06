@@ -6,7 +6,7 @@ import { Schema } from "mongoose";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/libs/auth";
 import { Session } from "next-auth";
-import { Product } from "@/models/Products";
+import { Product } from "@/models/products";
 import { EnrichedProducts, VariantsDocument } from "@/types/types";
 import { connectDB } from "@/libs/mongodb";
 

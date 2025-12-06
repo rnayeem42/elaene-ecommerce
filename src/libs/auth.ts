@@ -1,34 +1,44 @@
-import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import User from "@/models/User";
-import dbConnect from "@/libs/mongodb";
 import { compare } from "bcryptjs";
+import { connectDB } from "@/libs/mongodb";
+import User from "@/models/User";
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      credentials: {},
-
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
       async authorize(credentials) {
-        await dbConnect();
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Email and password are required");
+        }
 
-        const user = await User.findOne({ email: credentials?.email }).select("+password");
+        await connectDB();
+
+        const user = await User.findOne({
+          email: credentials.email,
+        }).select("+password");
 
         if (!user) {
-          throw new Error("User does not exist");
+          throw new Error("No user found with this email");
         }
 
         const isValid = await compare(credentials.password, user.password);
 
         if (!isValid) {
-          throw new Error("Password is incorrect");
+          throw new Error("Invalid password");
         }
 
         return {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
+          // @ts-ignore – assuming you have user.role in schema
+          role: user.role,
         };
       },
     }),
@@ -41,16 +51,24 @@ const handler = NextAuth({
   },
 
   callbacks: {
-    async session({ session, token }) {
-      session.user.id = token.id;
-      return session;
-    },
-
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        // @ts-ignore
+        token.id = (user as any).id;
+        // @ts-ignore
+        token.role = (user as any).role;
+      }
       return token;
     },
-  },
-});
 
-export { handler as GET, handler as POST };
+    async session({ session, token }) {
+      if (session.user) {
+        // @ts-ignore
+        session.user.id = token.id;
+        // @ts-ignore
+        session.user.role = token.role;
+      }
+      return session;
+    },
+  },
+};

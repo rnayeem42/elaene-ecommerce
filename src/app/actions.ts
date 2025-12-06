@@ -2,13 +2,13 @@
 
 import mongoose from "mongoose";
 import { connectDB } from "@/libs/mongodb";
-import { Product } from "@/models/Products";
+import Product from "@/models/products";   // <-- FIXED import
 import { EnrichedProducts } from "@/types/types";
 
 export const getAllProducts = async () => {
   try {
     await connectDB();
-    const products: EnrichedProducts[] = await Product.find();
+    const products: EnrichedProducts[] = await Product.find().lean();
     return products;
   } catch (error) {
     console.error("Error getting products:", error);
@@ -22,7 +22,7 @@ export const getCategoryProducts = async (category: string) => {
     const products: EnrichedProducts[] = await Product.find({ category });
     return products;
   } catch (error) {
-    console.error("Error getting products:", error);
+    console.error("Error getting category products:", error);
     throw new Error("Failed to fetch category products");
   }
 };
@@ -39,13 +39,13 @@ export const getRandomProducts = async (productId: string) => {
 
   try {
     await connectDB();
-    const allProducts: EnrichedProducts[] = await Product.find();
+    const allProducts: EnrichedProducts[] = await Product.find().lean();
     const shuffled = shuffleArray(allProducts);
     return shuffled
       .filter((p) => p._id.toString() !== productId)
       .slice(0, 6);
   } catch (error) {
-    console.error("Error getting products:", error);
+    console.error("Error getting random products:", error);
     throw new Error("Failed to fetch random products");
   }
 };
@@ -55,10 +55,10 @@ export const getProduct = async (_id: string) => {
     await connectDB();
 
     if (!mongoose.Types.ObjectId.isValid(_id)) {
-      return null; // এটাই হ্যাকার / স্ক্যানার সমস্যা বন্ধ করে
+      return null;
     }
 
-    const product = await Product.findById(_id);
+    const product = await Product.findById(_id).lean();
     return product;
   } catch (error) {
     console.error("Error getting product:", error);
