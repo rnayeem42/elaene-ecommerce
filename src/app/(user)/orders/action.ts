@@ -12,7 +12,7 @@ import {
   ProductsDocument,
   VariantsDocument,
 } from "@/types/types";
-import { Product } from "@/models/products";
+import { Product } from "@/models/Products_TEMP";
 import Stripe from "stripe";
 import { emptyCart, getItems } from "@/app/(carts)/cart/action";
 

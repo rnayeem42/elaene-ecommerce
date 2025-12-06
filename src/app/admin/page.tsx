@@ -1,7 +1,7 @@
 // src/app/admin/page.tsx
 import Link from "next/link";
 import { connectDB } from "@/libs/mongodb";
-import Product from "@/models/products";
+import Product from "@/models/Products_TEMP";
 
 async function getStats() {
   try {

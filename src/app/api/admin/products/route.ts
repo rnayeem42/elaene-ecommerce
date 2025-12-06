@@ -1,7 +1,7 @@
 // src/app/api/admin/products/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/libs/mongodb";
-import Product from "@/models/products";
+import Product from "@/models/Products_TEMP";
 
 export async function GET() {
   try {

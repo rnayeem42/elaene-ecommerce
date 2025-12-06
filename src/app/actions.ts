@@ -2,7 +2,7 @@
 
 import mongoose from "mongoose";
 import { connectDB } from "@/libs/mongodb";
-import Product from "@/models/products";   // <-- FIXED import
+import Product from "@/models/Products_TEMP";   // <-- FIXED import
 import { EnrichedProducts } from "@/types/types";
 
 export const getAllProducts = async () => {

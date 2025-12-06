@@ -3,7 +3,7 @@ import ProductForm, {
   type ProductFormValues,
 } from "@/components/admin/ProductForm";
 import { connectToDatabase } from "@/libs/mongodb";
-import Product from "@/models/products";
+import Product from "@/models/Products_TEMP";
 import { notFound } from "next/navigation";
 
 type Params = {
