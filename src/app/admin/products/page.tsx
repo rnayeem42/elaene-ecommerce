@@ -1,7 +1,7 @@
 // src/app/admin/products/page.tsx
 import Link from "next/link";
 import { connectToDatabase } from "@/libs/mongodb";
-import Product from "@/models/Products_TEMP";
+import Product from "@/models/Products";
 
 type ProductDoc = {
   _id: string;

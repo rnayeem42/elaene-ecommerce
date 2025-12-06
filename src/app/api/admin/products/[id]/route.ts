@@ -1,7 +1,7 @@
 // src/app/api/admin/products/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/libs/mongodb";
-import Product from "@/models/Products_TEMP";
+import Product from "@/models/Products";
 
 type Params = {
   params: { id: string };
